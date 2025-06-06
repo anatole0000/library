@@ -18,9 +18,7 @@ export const resolvers = {
     ...statResolver.Query,
     ...authResolver.Query,
   },
-  Author: {
-    ...authorResolver.Author,
-  },
+
   Mutation: {
     ...readerResolver.Mutation,
     ...loanResolver.Mutation,
@@ -31,5 +29,14 @@ export const resolvers = {
       const author = authorRepo.create({ name, bio });
       return authorRepo.save(author);
     }
+  },
+
+  Author: {
+    ...authorResolver.Author,
+  },
+
+  AuthorPagination: {
+    totalCount: (parent: any) => typeof parent.totalCount === 'number' ? parent.totalCount : 0,
+    items: (parent: any) => Array.isArray(parent.items) ? parent.items : [],
   }
 };

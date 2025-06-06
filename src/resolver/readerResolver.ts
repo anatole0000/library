@@ -3,11 +3,18 @@ import { Reader } from "../entity/Reader";
 
 export const readerResolver = {
   Query: {
-    readers: async () => {
+    readers: async (_: any, { skip = 0, take = 10 }: { skip?: number; take?: number }) => {
       const repo = getRepository(Reader);
-      return repo.find();
+      const [items, totalCount] = await repo.findAndCount({
+        skip,
+        take,
+        order: { id: "ASC" },
+      });
+
+      return { items, totalCount };
     },
   },
+
 
   Mutation: {
     addReader: async (

@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { RegisterInput } from "../dto/RegisterInput";
 import { validate } from "class-validator";
+import { sendEmail } from "../utils/email";
 
 const JWT_SECRET = "your_jwt_secret_key_here";
 
@@ -41,6 +42,12 @@ export const authResolver = {
         });
 
         const savedUser = await repo.save(user);
+
+        await sendEmail(
+        email,
+        "Welcome to Library App 📚",
+        `<h3>Hello ${name},</h3><p>Thanks for registering at our library!</p>`
+      );
         console.log("User saved:", savedUser);
         return savedUser;
       } catch (err) {

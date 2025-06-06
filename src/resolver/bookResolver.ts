@@ -5,9 +5,22 @@ import { requireRole } from "../utils/authHelpers";
 
 export const bookResolver = {
   Query: {
-    books: async () => {
+    books: async (_: any, { skip = 0, take = 10 }) => {
       const repo = getRepository(Book);
-      return repo.find({ relations: ["author"] });
+      const [items, totalCount] = await repo.findAndCount({
+        relations: ["author"],
+        skip,
+        take,
+        order: { id: "ASC" },
+      });
+
+      return { items, totalCount };
+    },
+    
+
+    authors: async () => {
+      const repo = getRepository(Author);
+      return repo.find();
     },
   },
 

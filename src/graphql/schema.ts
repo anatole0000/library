@@ -62,15 +62,36 @@ export const typeDefs = gql`
     token: String!
     user: Reader!
   }
+
+  type BookPagination {
+    items: [Book!]!
+    totalCount: Int!
+  }
+
+  type ReaderPagination {
+    items: [Reader!]!
+    totalCount: Int!
+  }
+
+  type AuthorPagination {
+    items: [Author!]!
+    totalCount: Int!
+  }
+
+  type LoanPagination {
+    items: [Loan!]!
+    totalCount: Int!
+  }
+
   ###########################
   #        QUERY TYPE       #
   ###########################
 
   type Query {
-    authors: [Author!]!
-    books: [Book!]!
-    readers: [Reader!]!
-    loans: [Loan!]!
+    authors(skip: Int = 0, take: Int = 10): AuthorPagination!
+    books(skip: Int = 0, take: Int = 10): BookPagination!
+    readers(skip: Int = 0, take: Int = 10): ReaderPagination!
+    loans(skip: Int = 0, take: Int = 10): LoanPagination!
     dashboardStats: DashboardStats!
     monthlyLoanStats(year: Int!): [MonthlyLoanStat!]!
     topBooks(limit: Int! = 5): [TopBook!]!

@@ -5,9 +5,16 @@ import { Book } from "../entity/Book";
 
 export const loanResolver = {
   Query: {
-    loans: async () => {
+    loans: async (_: any, { skip = 0, take = 10 }: { skip?: number; take?: number }) => {
       const repo = getRepository(Loan);
-      return repo.find({ relations: ["book", "reader"] });
+      const [items, totalCount] = await repo.findAndCount({
+        skip,
+        take,
+        order: { id: "ASC" },
+        relations: ["book", "reader"],
+      });
+
+      return { items, totalCount };
     },
   },
 
