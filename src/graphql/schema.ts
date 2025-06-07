@@ -1,9 +1,23 @@
-import { gql } from "apollo-server-koa";
+import { gql } from "graphql-tag";
+/**
+ * GraphQL schema definitions for the library management system.
+ * This schema includes types for authors, books, readers, loans, and various queries and mutations.
+ */
+
+
 
 export const typeDefs = gql`
   ###########################
   #       TYPE DEFINITIONS  #
   ###########################
+
+  scalar Upload
+
+  type File {
+    filename: String!
+    mimetype: String!
+    encoding: String!
+  }
 
   type Author {
     id: ID!
@@ -18,6 +32,7 @@ export const typeDefs = gql`
     author: Author!
     publishedYear: Int
     copiesAvailable: Int!
+    imageUrl: String
   }
 
   type Reader {
@@ -96,6 +111,7 @@ export const typeDefs = gql`
     monthlyLoanStats(year: Int!): [MonthlyLoanStat!]!
     topBooks(limit: Int! = 5): [TopBook!]!
     me: Reader!
+    askAI(question: String!): String
   }
 
   ###########################
@@ -109,6 +125,8 @@ export const typeDefs = gql`
       authorId: ID!
       publishedYear: Int
       copiesAvailable: Int!
+      imageUrl: String
+      imageFile: Upload 
     ): Book!
     addReader(
       name: String!
@@ -120,5 +138,6 @@ export const typeDefs = gql`
     returnBook(loanId: ID!): Loan!
     register(name: String!, email: String!, password: String!): Reader!
     login(email: String!, password: String!): AuthPayload!
+    uploadFile(file: Upload!): File!
   }
 `;

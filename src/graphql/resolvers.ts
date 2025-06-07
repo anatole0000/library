@@ -7,8 +7,13 @@ import { bookResolver } from "../resolver/bookResolver";
 import { dashboardResolver } from "../resolver/dashboardResolver";
 import { statResolver } from "../resolver/statResolver";
 import { authResolver } from "../resolver/authResolver";
+import { aiAssistantResolver } from "../resolver/aiAssistant";
+import { GraphQLUpload } from "graphql-upload";
+
 
 export const resolvers = {
+  Upload: GraphQLUpload,
+
   Query: {
     ...authorResolver.Query,
     ...readerResolver.Query,
@@ -17,6 +22,7 @@ export const resolvers = {
     ...dashboardResolver.Query,
     ...statResolver.Query,
     ...authResolver.Query,
+    ...aiAssistantResolver.Query,
   },
 
   Mutation: {
@@ -28,7 +34,17 @@ export const resolvers = {
       const authorRepo = getRepository(Author);
       const author = authorRepo.create({ name, bio });
       return authorRepo.save(author);
-    }
+    },
+
+    uploadFile: async (_: any, { file }: { file: any }) => {
+      const { createReadStream, filename, mimetype, encoding } = await file;
+
+      // Bạn có thể pipe sang lưu file hoặc upload Cloudinary ở đây
+      const _stream = createReadStream();
+      console.log(`Uploading ${filename} (${mimetype})`);
+
+      return { filename, mimetype, encoding };
+    },
   },
 
   Author: {
@@ -36,7 +52,8 @@ export const resolvers = {
   },
 
   AuthorPagination: {
-    totalCount: (parent: any) => typeof parent.totalCount === 'number' ? parent.totalCount : 0,
-    items: (parent: any) => Array.isArray(parent.items) ? parent.items : [],
-  }
+    totalCount: (parent: any) =>
+      typeof parent.totalCount === 'number' ? parent.totalCount : 0,
+    items: (parent: any) => (Array.isArray(parent.items) ? parent.items : []),
+  },
 };

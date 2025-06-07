@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { RegisterInput } from "../dto/RegisterInput";
 import { validate } from "class-validator";
-import { sendEmail } from "../utils/email";
+import { sendEmail } from "../utils/mailer";
 
 const JWT_SECRET = "your_jwt_secret_key_here";
 

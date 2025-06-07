@@ -19,6 +19,9 @@ export class Book {
   @Column()
   copiesAvailable!: number;
 
+  @Column({ nullable: true })
+  imageUrl?: string;  // URL of the book cover image
+
   @OneToMany(() => Loan, loan => loan.book)
   loans!: Loan[];
 }
