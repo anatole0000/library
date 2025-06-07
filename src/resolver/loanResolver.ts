@@ -2,6 +2,7 @@ import { getRepository } from "typeorm";
 import { Loan } from "../entity/Loan";
 import { Reader } from "../entity/Reader";
 import { Book } from "../entity/Book";
+import { loanStatsQueue } from "../queues/loanStatsQueue";
 
 export const loanResolver = {
   Query: {
@@ -28,7 +29,6 @@ export const loanResolver = {
       const reader = await readerRepo.findOne({ where: { id: readerId } });
 
       if (!book || !reader) throw new Error("Book or reader not found");
-
       if (book.copiesAvailable < 1) throw new Error("No available copies");
 
       // Giảm số sách còn lại
@@ -42,7 +42,23 @@ export const loanResolver = {
         returned: false,
       });
 
-      return loanRepo.save(newLoan);
+      const savedLoan = await loanRepo.save(newLoan);
+
+      await loanStatsQueue.add("update-loan-stats", {
+        type: "BORROW",
+        bookId: book.id,
+        bookTitle: book.title,
+        borrowDate: new Date().toISOString(),
+      });
+
+      // 🔔 Emit thông báo realtime
+      globalThis.io?.emit("bookBorrowed", {
+        bookTitle: book.title,
+        readerName: reader.name,
+        time: new Date().toISOString(),
+      });
+
+      return savedLoan;
     },
 
     returnBook: async (_: any, { loanId }: { loanId: number }) => {
@@ -51,7 +67,7 @@ export const loanResolver = {
 
       const loan = await loanRepo.findOne({
         where: { id: loanId },
-        relations: ["book"],
+        relations: ["book", "reader"],
       });
 
       if (!loan || loan.returned) throw new Error("Invalid loan or already returned");
@@ -63,7 +79,16 @@ export const loanResolver = {
       loan.book.copiesAvailable += 1;
       await bookRepo.save(loan.book);
 
-      return loanRepo.save(loan);
+      const updatedLoan = await loanRepo.save(loan);
+
+      // 🔔 Emit thông báo realtime
+      globalThis.io?.emit("bookReturned", {
+        bookTitle: loan.book.title,
+        readerName: loan.reader?.name,
+        time: new Date().toISOString(),
+      });
+
+      return updatedLoan;
     },
   },
 };

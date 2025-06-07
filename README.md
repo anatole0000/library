@@ -83,3 +83,30 @@ Run your app locally.
 Register a new user via GraphQL Playground or Apollo Studio.
 
 Check the email in your Mailtrap inbox.
+
+## Caching and Analytics with Redis
+
+To improve performance for analytics queries, this project uses **Redis** to cache statistical data such as monthly loan stats and top borrowed books.
+
+### How it works
+
+- When you query for monthly loan statistics or top books, the API first checks if the data is available in Redis cache.
+- If cached data exists, it is returned immediately, reducing database load and improving response time.
+- If not, the API queries the PostgreSQL database, then stores the result in Redis with a TTL (time-to-live) of 1 hour.
+- Subsequent requests within the TTL window will serve cached data.
+
+### Setup Redis
+
+1. Install and run Redis server locally or use a managed Redis service.
+2. Configure Redis connection in `queues/redisConnection.ts` or `utils/redisClient.ts`:
+
+```ts
+import { RedisOptions } from "bullmq";
+import { Redis } from "ioredis";
+
+export const connection: RedisOptions = {
+  host: "127.0.0.1",
+  port: 6379,
+};
+
+export const redisClient = new Redis(connection);

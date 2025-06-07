@@ -1,34 +1,54 @@
 import { getRepository } from "typeorm";
 import { Loan } from "../entity/Loan";
 import { Book } from "../entity/Book";
+import { redis } from "../utils/redisClient";  // Redis client sử dụng node-redis
 
 export const statResolver = {
   Query: {
     monthlyLoanStats: async (_: any, { year }: { year: number }) => {
-      const loanRepo = getRepository(Loan);
+      const cacheKey = `monthlyLoanStats:${year}`;
 
-      // Lấy tất cả các phiếu mượn trong năm
+      // Thử lấy dữ liệu từ Redis cache
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        // Nếu có cache thì parse và trả về luôn
+        return JSON.parse(cached);
+      }
+
+      // Nếu không có cache, lấy dữ liệu từ DB
+      const loanRepo = getRepository(Loan);
       const loans = await loanRepo
         .createQueryBuilder("loan")
         .where("EXTRACT(YEAR FROM loan.borrowDate) = :year", { year })
         .getMany();
 
-      // Đếm số phiếu mượn theo tháng
       const stats = Array(12).fill(0);
-
       loans.forEach((loan) => {
         const month = loan.borrowDate.getMonth(); // 0-based
         stats[month]++;
       });
 
-      // Trả về mảng { month: 1-12, loansCount }
-      return stats.map((count, idx) => ({
+      const result = stats.map((count, idx) => ({
         month: idx + 1,
         loansCount: count,
       }));
+
+      // Lưu kết quả vào Redis với TTL 1 giờ (3600 giây)
+      await redis.set(cacheKey, JSON.stringify(result), {
+        EX: 3600,
+      });
+
+      return result;
     },
 
     topBooks: async (_: any, { limit }: { limit: number }) => {
+      const cacheKey = `topBooks:${limit}`;
+
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        return JSON.parse(cached);
+      }
+
       const loanRepo = getRepository(Loan);
 
       const rawData = await loanRepo
@@ -41,9 +61,8 @@ export const statResolver = {
         .getRawMany();
 
       const bookRepo = getRepository(Book);
-
-      // Lấy thông tin sách theo bookId
       const results = [];
+
       for (const row of rawData) {
         const book = await bookRepo.findOne({ where: { id: row.bookId } });
         if (book) {
@@ -54,6 +73,10 @@ export const statResolver = {
           });
         }
       }
+
+      await redis.set(cacheKey, JSON.stringify(results), {
+        EX: 3600, // cache 1 giờ
+      });
 
       return results;
     },
